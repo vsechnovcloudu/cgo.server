@@ -2,11 +2,24 @@ import { Room, Client } from "colyseus";
 import { Schema, type, MapSchema } from "@colyseus/schema";
 
 export class Player extends Schema {
+
+    @type("string")
+    id: string;
+
     @type("number")
     x: number;
 
     @type("number")
     y: number;
+
+    @type("number")
+    z: number;
+
+    @type("number")
+    rotation: number;
+
+    @type("boolean")
+    connected: boolean = true;
 }
 
 export class State extends Schema {
@@ -16,8 +29,11 @@ export class State extends Schema {
 
     createPlayer (id: string) {
         this.players[ id ] = new Player();
-        this.players[ id ].x = 1;
-        this.players[ id ].y = 1;
+        this.players[ id ].x = 0;
+        this.players[ id ].y = 0;
+        this.players[ id ].z = 0;
+        this.players[ id ].rotation = 0;
+        this.players[ id ].id = id;
 
     }
 
@@ -25,15 +41,38 @@ export class State extends Schema {
         delete this.players[ id ];
     }
 
-    movePlayer (id: string, movement: any) {
+    movePlayer (id: string, data: any) {
 
-        console.log("debug ", movement);
-        if (movement.x) {
-            this.players[ id ].x += movement.x * 10;
+        console.log("debug ", data);
 
-        } else if (movement.y) {
-            this.players[ id ].y += movement.y * 10;
+        // if (data === "move_right") {
+        //   this.state.players[client.sessionId].x += 0.01;
+        // }
+
+        // if ( data.x ) {
+        //     this.players[ id ].x = data.x;
+        //     console.log("Player moved x:" + data.x);
+        //
+        // } else if ( data.y ) {
+        //     this.players[ id ].y = data.y;
+        //     console.log("Player moved y:" + data.y);
+        //
+        // } else if ( data.z ) {
+        //     this.players[ id ].z = data.z;
+        //     console.log("Player moved z:" + data.z);
+        // }
+        if ( data.action == "move" )
+        {
+          this.players[ id ].x = data.x;
+          this.players[ id ].y = data.y;
+          this.players[ id ].z = data.z;
         }
+
+        if ( data.action == "rotate" )
+        {
+          this.players[ id ].rotation = data.rotation;
+        }
+
     }
 
 
@@ -58,9 +97,10 @@ export class MyRoom extends Room<State> {
       }
 
       onMessage (client: Client, data: any) {
-        console.log("StateHandlerRoom received message from", client.sessionId, ":", data);
 
+        console.log("Message from: ", client.sessionId, ":", data);
         this.state.movePlayer(client.sessionId, data);
+
       }
 
       onLeave (client: Client, consented: boolean) {
